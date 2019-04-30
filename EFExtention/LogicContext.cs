@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EFExtention
 {
@@ -15,8 +17,13 @@ namespace EFExtention
         }
         public override int SaveChanges()
         {
+            BeforeSave();
+            return base.SaveChanges();
+        }
+        private void BeforeSave()
+        {
             var objectStateEntries = ChangeTracker.Entries()
-            .Where(e => e.Entity is LogicEntity && (e.State == EntityState.Modified || e.State == EntityState.Added)).ToList();
+           .Where(e => e.Entity is LogicEntity && (e.State == EntityState.Modified || e.State == EntityState.Added)).ToList();
             var currentTime = DateTime.UtcNow;
             foreach (var entry in objectStateEntries)
             {
@@ -29,8 +36,11 @@ namespace EFExtention
                 }
                 entityBase.UpdatedTime = currentTime;
             }
-
-            return base.SaveChanges();
+        }
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            BeforeSave();
+            return base.SaveChangesAsync(cancellationToken);
         }
     }
 }
